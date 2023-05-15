@@ -18,7 +18,7 @@ def findEmail(url, TTL, mainUrl):
     #Получаем все теги-ссылки
     page_urls = soup.findAll('a')
     
-    #Обрабатываем полученные ссылки
+    #Обрабатываем полученные ссылки для большнй ясности
     for element in page_urls:
         #Если тег не пустой
         if element.string != None:
