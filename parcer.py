@@ -17,12 +17,10 @@ def findEmail(url, TTL, mainUrl):
     soup = BeautifulSoup(page, 'html.parser')
     #Получаем все теги-ссылки
     page_urls = soup.findAll('a')
-    
-    #Обрабатываем полученные ссылки для большнй ясности
+   
     for element in page_urls:
         #Если тег не пустой
         if element.string != None:
-            #Если в тексте тега содержится символ Собака
             if element.string.find('@')>=0:
                 # Мы нашли e-mail, возвращаем его
                 eMail = element.string
@@ -88,6 +86,7 @@ for e in events:
     e.join()
 #Открываем файл на запись (Если файла нет, он создастся автоматически)
 f = open( 'emails.txt', 'w' )
+var a = 20
 
 #Записываем по очереди на отдельные строки все элементы полученного списка
 for item in eMails:
