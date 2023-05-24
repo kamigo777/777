@@ -4,15 +4,7 @@ import threading
 eMails = []
 urls = []
 last_urls =[]
-def findEmail(url, TTL, mainUrl):
-    eMail = ''
-    try:
-        #Сразу отсеим ссылки на документы pdf
-        if url.find("pdf") < 0:
-             # Загрузаем страницу сайта
-            page = urlopen(url)
-    except Exception:
-        return eMail
+
     #Парсим полученную страницу
     soup = BeautifulSoup(page, 'html.parser')
     #Получаем все теги-ссылки
