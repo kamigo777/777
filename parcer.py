@@ -9,6 +9,24 @@ last_urls =[]
     soup = BeautifulSoup(page, 'html.parser')
     #Получаем все теги-ссылки
     page_urls = soup.findAll('a')
+    
+     #Добавляем адреса сайтов в список и запусткаем обработку полученного полученного сайта в отдельном потоке
+    for element in urls_tag:
+        urls.append(element.string)
+        events.append(threading.Thread(target=startFinder,args=('http://' + element.string, 3,element.string)))
+        #Запускаем поток
+        events[-1].start()   
+    i=i+1
+i = 1
+while i<=5:
+    page = urlopen("https://esir.gov.spb.ru/category/22/?page="+str(i))
+    soup = BeautifulSoup(page, 'html.parser')
+    urls_tag = soup.findAll(attrs={"class":"small"})
+    for element in urls_tag:
+        urls.append(element.string)
+        events.append(threading.Thread(target=startFinder,args=('http://' + element.string, 3,element.string)))
+        events[-1].start()
+    i=i+1  
    
     for element in page_urls:
         #Если тег не пустой
@@ -56,23 +74,7 @@ while i<=26: #На сайте 26 страниц с полезной иформа
     #Получаем со страницы все теги с классом small
     urls_tag = soup.findAll(attrs={"class":"small"})
     
-    #Добавляем адреса сайтов в список и запусткаем обработку полученного полученного сайта в отдельном потоке
-    for element in urls_tag:
-        urls.append(element.string)
-        events.append(threading.Thread(target=startFinder,args=('http://' + element.string, 3,element.string)))
-        #Запускаем поток
-        events[-1].start()   
-    i=i+1
-i = 1
-while i<=5:
-    page = urlopen("https://esir.gov.spb.ru/category/22/?page="+str(i))
-    soup = BeautifulSoup(page, 'html.parser')
-    urls_tag = soup.findAll(attrs={"class":"small"})
-    for element in urls_tag:
-        urls.append(element.string)
-        events.append(threading.Thread(target=startFinder,args=('http://' + element.string, 3,element.string)))
-        events[-1].start()
-    i=i+1  
+   
 #Завершаем потоки
 for e in events:
     e.join()
