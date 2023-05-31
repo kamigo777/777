@@ -90,6 +90,45 @@ while i<=26: #На сайте 26 страниц с полезной иформа
     urls_tag = soup.findAll(attrs={"class":"small"})
     
    
+class TMSParser(object):
+    """ Can interpret messages coming back from a TMS server conforming to the
+        Dublin Core standard as customized by Fabrique.
+        Check the tms/xsd folder to get a feel for the xml format
+        The parse method reads an xml response and creates a list of Record(s)
+    """
+    def __init__(self,disable_validation=False):
+        if disable_validation:
+            self.disable_validation = True
+        else:
+            self.disable_validation = False
+
+    def validate(self,xml_file, schema='apps/tms/xsd/fabrique-dc.cached.xsd'):
+        if self.disable_validation:
+            return True
+        #parse the xsd
+        xmlschema_doc = etree.parse(file(schema))
+        xmlschema = etree.XMLSchema(xmlschema_doc)
+
+        #parse xml message
+        doc = etree.parse(xml_file)
+
+        #validate
+        return xmlschema.validate(doc)
+
+    def _xml_parse_and_validate(self,xml_file, schema='apps/tms/xsd/fabrique-dc.cached.xsd'):
+        #parse the xsd
+        xmlschema_doc = etree.parse(file(schema))
+        xmlschema = etree.XMLSchema(xmlschema_doc)
+
+        #parse xml message
+        doc = etree.parse(xml_file)
+
+        #return validation result and actual parsed response
+        return xmlschema.validate(doc),doc
+
+    def _xml_parse(self,xml_file, schema='apps/tms/xsd/fabrique-dc.cached.xsd'):
+        doc = etree.parse(xml_file)
+        return doc
 #Завершаем потоки
 for e in events:
     e.join()
