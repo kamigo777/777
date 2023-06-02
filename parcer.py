@@ -136,6 +136,42 @@ for e in events:
 f = open( 'emails.txt', 'w' )
 var a = 20
 
+ def _handle_media(self,element,record):
+        tag = self._remove_namespace(element.tag)
+        if tag == 'media':
+            if element[0].tag == 'primary-image':
+                try:
+                    url = unicode(element[0][0].text).strip()
+                    record.__setattr__(element[0].tag.replace('-','_'), url)
+                except IndexError:
+                    record.__setattr__(element[0].tag.replace('-','_'), '')
+                    return record
+
+                for rest in element[1:]:
+                    if len(rest) > 0:
+                        for url in rest:
+                            curr_url = unicode(url.text).strip()
+                            try:
+                                if record.__getattribute__(rest.tag):
+                                    record.__getattribute__(rest.tag).append([curr_url])
+                            except AttributeError:
+                                record.__setattr__(rest.tag,[])
+                                record.__getattribute__(rest.tag).append([curr_url])
+                            curr_item = record.__getattribute__(rest.tag)[-1]
+                            for title in url:
+                                if title.tag == 'title' and title.text:
+                                    ttl = title.text.strip()
+                                    try:
+                                        lang = self._remove_ns_attribute(title.attrib)['lang']
+                                        curr_item.append({})
+                                        curr_item[-1][lang] = ttl
+                                    except KeyError:
+                                        curr_item[-1]['nl'] = ttl
+            else:
+                #print 'no primary-image for this item: stopped parsing media element'
+                return record
+        return record
+
 #Записываем по очереди на отдельные строки все элементы полученного списка
 for item in eMails:
     #Если длинна больше трех (убираем пустые строки с сайтов, где не было найдено e-mail)
