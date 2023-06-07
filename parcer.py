@@ -68,27 +68,29 @@ while i<=5:
                             
     return eMail
 
-#Фукция-обертка для удобного запуска потока
-def startFinder(url, TTL, mainUrl):
-    #Отчитываемся о том, что запустили поток
-    print("thread " + mainUrl + " start \n")
-    #Ищем адреса на сайте (mainUrl нужен для того, чтобы оставаться в пределах сайта)
-    eM = findEmail(url, TTL,mainUrl)
-    #Добавляем в список
-    eMails.append(eM)
+def parse_question(question):
+    answers = list(parse_answers(question))[::-1]
+    title = parse_title(question, answers[0])
+    return title, answers
 
-events = []
-i = 1
-while i<=26: #На сайте 26 страниц с полезной иформацией
-    # Загружаем страницу
-    page = urlopen("https://esir.gov.spb.ru/category/21/?page="+str(i)) 
-    
-    #Парсим страницу с помощью BeautifulSoup
-    soup = BeautifulSoup(page, 'html.parser')
-    
-    #Получаем со страницы все теги с классом small
-    urls_tag = soup.findAll(attrs={"class":"small"})
-    
+
+def transform_answers(answers):
+    letters = "ABCDEFGHIJKLMNOP"
+
+    for letter, answer in zip(letters, answers):
+        new_answer = answer.replace("**", "")
+        new_answer = f"{letter}) {new_answer}"
+
+        if answer.startswith("**"):
+            yield ">>>" + new_answer
+        else:
+            yield new_answer
+
+
+def transform_title(num, title):
+    trimmed_title = title[len(str(num)):]
+    return f"{num}.{trimmed_title}"
+
    
 class TMSParser(object):
     """ Can interpret messages coming back from a TMS server conforming to the
