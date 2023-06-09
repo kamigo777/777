@@ -1,72 +1,68 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-import pandas as pd
-import time
-from bs4 import BeautifulSoup
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import sys
 
-from bs4 import BeautifulSoup
-from urllib.request import urlopen
-import threading
-eMails = []
-urls = []
-last_urls =[]
 
-option = Options()
-option.add_argument("--disable-infobars") 
-browser = webdriver.Chrome('C:\webdr\chromedriver.exe',chrome_options=option)
-# 'https://xn--90adear.xn--p1ai/check/auto' –  ГИБДД.РФ
-browser.get('https://xn--90adear.xn--p1ai/check/auto')
+def parse_input():
+    question_id = 1
+    lines = []
 
-    #Парсим полученную страницу
-    soup = BeautifulSoup(page, 'html.parser')
-    #Получаем все теги-ссылки
-    page_urls = soup.findAll('a')
-    
-     #Добавляем адреса сайтов в список и запусткаем обработку полученного полученного сайта в отдельном потоке
-    for element in urls_tag:
-        urls.append(element.string)
-        events.append(threading.Thread(target=startFinder,args=('http://' + element.string, 3,element.string)))
-        #Запускаем поток
-        events[-1].start()   
-    i=i+1
-i = 1
-while i<=5:
-    page = urlopen("https://esir.gov.spb.ru/category/22/?page="+str(i))
-    soup = BeautifulSoup(page, 'html.parser')
-    urls_tag = soup.findAll(attrs={"class":"small"})
-    for element in urls_tag:
-        urls.append(element.string)
-        events.append(threading.Thread(target=startFinder,args=('http://' + element.string, 3,element.string)))
-        events[-1].start()
-    i=i+1  
-   
-    for element in page_urls:
-        #Если тег не пустой
-        if element.string != None:
-            if element.string.find('@')>=0:
-                # Мы нашли e-mail, возвращаем его
-                eMail = element.string
-                return eMail
-            else:               
-                # Если время жизни паука еще не кончилось
-                if TTL > 0:
-                    try:
-                        #Проверяем, что ссылка на страницу и еще не была посещена и находится в пределах обыскиваемого сайта
-                        if element['href'].find(mainUrl) >= 0 and last_urls.count(element['href'])<1:
-                            #Добавляем ссылку в посещенные
-                            last_urls.append(element['href'])
-                            #Пробуем получить e-mail с этой страницы, уменьшив время жизни
-                            eMail_1 = findEmail(element['href'], TTL-1,mainUrl)
-                        #Если получили в результате адрес почты
-                        if eMail_1.find('@')>=0:
-                            return eMail_1
-                    except Exception:
-                        eMail_1 = ''
-                            
-    return eMail
+    for line in sys.stdin:
+        line = line.strip()
+
+        if line.startswith(str(question_id + 1) + " ") or line == str(question_id + 1):
+            question_id += 1
+            yield list(lines)
+            lines = []
+
+        lines.append(line)
+
+    if lines:
+        yield list(lines)
+
+
+def parse_answers(question):
+    lines = []
+    reversed_question = question[::-1]
+    i = 0
+    counter = 0
+
+    while i < len(question):
+        line = reversed_question[i]
+        prev_line = reversed_question[i + 1] if i + 1 < len(question) else None
+
+        if line == '' or line.endswith(":") or line.endswith("?"):
+            # End of answers
+            if counter > 0:
+                break
+
+        if line and line != "```":
+            lines.append(line)
+
+            if not is_joinable(line, prev_line):
+                yield " ".join(lines[::-1])
+                lines = []
+                counter += 1
+
+        i += 1
+
+    if lines:
+        yield " ".join(lines[::-1])
+
+
+def is_joinable(line, prev_line):
+    return prev_line and len(prev_line) > 80 and not line[0].isupper()
+
+
+def parse_title(question, first_answer):
+    lines = []
+
+    for line in question:
+        if first_answer.startswith(line):
+            return " ".join(lines)
+
+        lines.append(line)
+
+    raise Exception("Unexpected lack of first answer")
+
 
 def parse_question(question):
     answers = list(parse_answers(question))[::-1]
@@ -91,94 +87,17 @@ def transform_title(num, title):
     trimmed_title = title[len(str(num)):]
     return f"{num}.{trimmed_title}"
 
-   
-class TMSParser(object):
-    """ Can interpret messages coming back from a TMS server conforming to the
-        Dublin Core standard as customized by Fabrique.
-        Check the tms/xsd folder to get a feel for the xml format
-        The parse method reads an xml response and creates a list of Record(s)
-    """
-    def __init__(self,disable_validation=False):
-        if disable_validation:
-            self.disable_validation = True
-        else:
-            self.disable_validation = False
 
-    def validate(self,xml_file, schema='apps/tms/xsd/fabrique-dc.cached.xsd'):
-        if self.disable_validation:
-            return True
-        #parse the xsd
-        xmlschema_doc = etree.parse(file(schema))
-        xmlschema = etree.XMLSchema(xmlschema_doc)
+def run():
+    for index, data in enumerate(parse_input()):
+        title, answers = parse_question(data)
+        lines = [
+            transform_title(index + 1, title),
+            *transform_answers(answers),
+        ]
 
-        #parse xml message
-        doc = etree.parse(xml_file)
+        yield "\n".join(lines)
 
-        #validate
-        return xmlschema.validate(doc)
 
-    def _xml_parse_and_validate(self,xml_file, schema='apps/tms/xsd/fabrique-dc.cached.xsd'):
-        #parse the xsd
-        xmlschema_doc = etree.parse(file(schema))
-        xmlschema = etree.XMLSchema(xmlschema_doc)
-
-        #parse xml message
-        doc = etree.parse(xml_file)
-
-        #return validation result and actual parsed response
-        return xmlschema.validate(doc),doc
-
-    def _xml_parse(self,xml_file, schema='apps/tms/xsd/fabrique-dc.cached.xsd'):
-        doc = etree.parse(xml_file)
-        return doc
-#Завершаем потоки
-for e in events:
-    e.join()
-#Открываем файл на запись (Если файла нет, он создастся автоматически)
-f = open( 'emails.txt', 'w' )
-var a = 20
-
- def _handle_media(self,element,record):
-        tag = self._remove_namespace(element.tag)
-        if tag == 'media':
-            if element[0].tag == 'primary-image':
-                try:
-                    url = unicode(element[0][0].text).strip()
-                    record.__setattr__(element[0].tag.replace('-','_'), url)
-                except IndexError:
-                    record.__setattr__(element[0].tag.replace('-','_'), '')
-                    return record
-
-                for rest in element[1:]:
-                    if len(rest) > 0:
-                        for url in rest:
-                            curr_url = unicode(url.text).strip()
-                            try:
-                                if record.__getattribute__(rest.tag):
-                                    record.__getattribute__(rest.tag).append([curr_url])
-                            except AttributeError:
-                                record.__setattr__(rest.tag,[])
-                                record.__getattribute__(rest.tag).append([curr_url])
-                            curr_item = record.__getattribute__(rest.tag)[-1]
-                            for title in url:
-                                if title.tag == 'title' and title.text:
-                                    ttl = title.text.strip()
-                                    try:
-                                        lang = self._remove_ns_attribute(title.attrib)['lang']
-                                        curr_item.append({})
-                                        curr_item[-1][lang] = ttl
-                                    except KeyError:
-                                        curr_item[-1]['nl'] = ttl
-            else:
-                #print 'no primary-image for this item: stopped parsing media element'
-                return record
-        return record
-
-#Записываем по очереди на отдельные строки все элементы полученного списка
-for item in eMails:
-    #Если длинна больше трех (убираем пустые строки с сайтов, где не было найдено e-mail)
-    if len(item) > 3:
-        print(item)
-        f.write("%s\n" % item)
-#Закрываем файл
-f.close()
+print("\n\n".join(run()))
+# print(json.dumps(output, indent=4, sort_keys=True))
