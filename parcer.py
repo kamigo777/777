@@ -48,40 +48,6 @@ def parse_answers(question):
         yield " ".join(lines[::-1])
 
 
-def is_joinable(line, prev_line):
-    return prev_line and len(prev_line) > 80 and not line[0].isupper()
-
-
-def parse_title(question, first_answer):
-    lines = []
-
-    for line in question:
-        if first_answer.startswith(line):
-            return " ".join(lines)
-
-        lines.append(line)
-
-    raise Exception("Unexpected lack of first answer")
-
-
-def parse_question(question):
-    answers = list(parse_answers(question))[::-1]
-    title = parse_title(question, answers[0])
-    return title, answers
-
-
-def transform_answers(answers):
-    letters = "ABCDEFGHIJKLMNOP"
-
-    for letter, answer in zip(letters, answers):
-        new_answer = answer.replace("**", "")
-        new_answer = f"{letter}) {new_answer}"
-
-        if answer.startswith("**"):
-            yield ">>>" + new_answer
-        else:
-            yield new_answer
-
 
 def transform_title(num, title):
     trimmed_title = title[len(str(num)):]
