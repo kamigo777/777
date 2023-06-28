@@ -8,44 +8,8 @@ def parse_input():
     for line in sys.stdin:
         line = line.strip()
 
-        if line.startswith(str(question_id + 1) + " ") or line == str(question_id + 1):
-            question_id += 1
-            yield list(lines)
-            lines = []
-
-        lines.append(line)
-
     if lines:
         yield list(lines)
-
-
-def parse_answers(question):
-    lines = []
-    reversed_question = question[::-1]
-    i = 0
-    counter = 0
-
-    while i < len(question):
-        line = reversed_question[i]
-        prev_line = reversed_question[i + 1] if i + 1 < len(question) else None
-
-        if line == '' or line.endswith(":") or line.endswith("?"):
-            # End of answers
-            if counter > 0:
-                break
-
-        if line and line != "```":
-            lines.append(line)
-
-            if not is_joinable(line, prev_line):
-                yield " ".join(lines[::-1])
-                lines = []
-                counter += 1
-
-        i += 1
-
-    if lines:
-        yield " ".join(lines[::-1])
 
 
 
