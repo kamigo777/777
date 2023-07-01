@@ -13,10 +13,6 @@ def parse_input():
 
 
 
-def transform_title(num, title):
-    trimmed_title = title[len(str(num)):]
-    return f"{num}.{trimmed_title}"
-
 
 def run():
     for index, data in enumerate(parse_input()):
